@@ -41,4 +41,5 @@
 *.dwo
 
 # all build files
-bin/*
+bin/
+.mybuild/
