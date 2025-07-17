@@ -3,14 +3,10 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
 
-#include "Args.hpp"
+#include "g.hpp"
+#include "bin folder/k.hpp"
 
 int main(int argc, const char* argv[]){
-
-
-    SDL_Window* window;
-    SDL_Renderer* renderer;
-    SDL_Texture* texture;
-
-
+    log("Test message");
+    return 0;
 }
