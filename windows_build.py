@@ -13,7 +13,7 @@ SDL2_LIB = "libs/sdl2/lib"
 SDL2_DLL = os.path.join("libs/sdl2/bin", "SDL2.dll")
 LinkFlags = f"-I{SDL2_INCLUDE} -L{SDL2_LIB} -lSDL2main -lSDL2 -Xlinker /subsystem:windows -lShell32"
 # Optional flags — tune as needed
-ExtraFlags = "-MD"
+ExtraFlags = "-MD -m64"
 
 # Gather all .cpp files
 SourceFiles = " ".join([
