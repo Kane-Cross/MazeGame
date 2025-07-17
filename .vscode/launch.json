@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run MazeGame (Debug)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/debug/main.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": true,
+      "MIMode": "lldb",
+      "miDebuggerPath": "lldb-mi",
+      "preLaunchTask": "Build MazeGame (Debug)"
+    }
+  ]
+}

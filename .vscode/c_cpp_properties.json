@@ -1,0 +1,28 @@
+{
+    "configurations": [
+        {
+            "name": "MazeGame",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/src/headers",
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/libs",
+                "${workspaceFolder}/libs/sdl2",
+                "${workspaceFolder}/libs/sdl2/include",
+                "${workspaceFolder}/libs/sdl2/lib",
+                "${workspaceFolder}/libs/sdl2/bin"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "windowsSdkVersion": "10.0.26100.0",
+            "compilerPath": "C:\\Program Files\\LLVM\\bin\\clang++",
+            "cStandard": "c17",
+            "cppStandard": "c++20",
+            "intelliSenseMode": "windows-clang-x64"
+        }
+    ],
+    "version": 4
+}

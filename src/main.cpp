@@ -1,3 +1,8 @@
+#ifdef _WIN32
+#include <windows.h>
+#include <shellapi.h>
+#endif
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_image.h>
