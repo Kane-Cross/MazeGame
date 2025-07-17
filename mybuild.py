@@ -130,13 +130,25 @@ def CompilationThread():
 
         if need_to_compile:
             if build_type == "test":
-                command: str = Compiler + " -c "+ my_src +" -o "+ TestBin +"/"+ my_obj + " "+ TestCFlags +" "+ AllCFlags
+                if verbose_logging:
+                    command: str = Compiler + " -c "+ my_src +" -v -o "+ TestBin +"/"+ my_obj + " "+ TestCFlags +" "+ AllCFlags
+                else:
+                    command: str = Compiler + " -c "+ my_src +" -o "+ TestBin +"/"+ my_obj + " "+ TestCFlags +" "+ AllCFlags
             if build_type == "debug":
-                command: str = Compiler + " -c "+ my_src +" -o "+ DebugBin +"/"+ my_obj + " "+ DebugCFlags +" "+ AllCFlags
+                if verbose_logging:
+                    command: str = Compiler + " -c "+ my_src +" -v -o "+ DebugBin +"/"+ my_obj + " "+ DebugCFlags +" "+ AllCFlags
+                else:
+                    command: str = Compiler + " -c "+ my_src +" -o "+ DebugBin +"/"+ my_obj + " "+ DebugCFlags +" "+ AllCFlags
             if build_type == "release":
-                command: str = Compiler + " -c "+ my_src +" -o "+ ReleaseBin +"/"+ my_obj + " "+ ReleaseCFlags +" "+ AllCFlags
+                if verbose_logging:
+                    command: str = Compiler + " -c "+ my_src +" -v -o "+ ReleaseBin +"/"+ my_obj + " "+ ReleaseCFlags +" "+ AllCFlags
+                else:
+                    command: str = Compiler + " -c "+ my_src +" -o "+ ReleaseBin +"/"+ my_obj + " "+ ReleaseCFlags +" "+ AllCFlags
             if build_type == "prod":
-                command: str = Compiler + " -c "+ my_src +" -o "+ ProdBin +"/"+ my_obj + " "+ ProdCFlags +" "+ AllCFlags
+                if verbose_logging:
+                    command: str = Compiler + " -c "+ my_src +" -v -o "+ ProdBin +"/"+ my_obj + " "+ ProdCFlags +" "+ AllCFlags
+                else:
+                    command: str = Compiler + " -c "+ my_src +" -o "+ ProdBin +"/"+ my_obj + " "+ ProdCFlags +" "+ AllCFlags
             print(" Compiling ("+build_type.center(7, " ")+"): "+my_src.removeprefix("src/"))
             result = subprocess.run(command, shell=True).returncode
             if result == 0:
