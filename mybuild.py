@@ -8,7 +8,7 @@ import os
 
 Compiler: str = "clang++"
 StripUtil: str = "llvm-strip-20"
-LinkFlags: str = "-lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf"
+LinkFlags: str = "-lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl"
 AllCFlags: str = "-Wall"
 TestCFlags: str = "-O0 -g0 -DTEST -DNDEBUG"
 DebugCFlags: str = "-Og -g3 -DDEBUG"
