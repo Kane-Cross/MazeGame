@@ -14,10 +14,15 @@ TestCFlags: str = "-O0 -g0 -DTEST -DNDEBUG"
 DebugCFlags: str = "-Og -g3 -DDEBUG"
 ReleaseCFlags: str = "-O2 -g0 -flto=thin -DRELEASE -DNDEBUG"
 ProdCFlags: str = "-O3 -g0 -flto=full -DPRODUCTION -DNDEBUG"
-TestBin: str = "bin/test"
-DebugBin: str = "bin/debug"
-ReleaseBin: str = "bin/release"
-ProdBin: str = "bin/prod"
+TestObjBin: str = ".mybuild/bin/test/"
+DebugObjBin: str = ".mybuild/bin/debug/"
+ReleaseObjBin: str = ".mybuild/bin/release/"
+ProdObjBin: str = ".mybuild/bin/prod/"
+TestBin: str = "bin/test/"
+DebugBin: str = "bin/debug/"
+ReleaseBin: str = "bin/release/"
+ProdBin: str = "bin/prod/"
+ExecutableName: str = "MazeGame"
 Sources: list[str] = []
 
 PendingSources: list[str] = []
@@ -30,6 +35,11 @@ new_test_hashes: list[str] = []
 new_debug_hashes: list[str] = []
 new_release_hashes: list[str] = []
 new_prod_hashes: list[str] = []
+
+build_fail_test: bool = False
+build_fail_debug: bool = False
+build_fail_release: bool = False
+build_fail_prod: bool = False
 
 verbose_logging: bool = False
 def log(message: str):
@@ -49,8 +59,24 @@ def get_obj_filename(src: str):
             src = src[src.rfind("/")+1:].removesuffix(".cpp") + ".o"
     return src
 
+def get_all_srcs():
+    global Sources
+    for dir, dirs, files in os.walk("src"):
+        for file in files:
+            if file.endswith(".cpp"):
+                Sources += [dir+"/"+file]
+
+def get_all_hdrs():
+    headers: list[str] = []
+    for dir, dirs, files in os.walk("src"):
+        for file in files:
+            if file.endswith(".hpp"):
+                headers += [dir+"/"+file]
+    return headers
+
 def get_cpp_dependencies(src: str, build_mode: str):
-    include_list: list[str] = ""
+    include_list: list[str] = []
+    header_dependencies: list[str] = []
     if build_mode == "test":
         result = subprocess.run(Compiler+" -M "+TestCFlags+" "+src, shell=True, capture_output=True)
     if build_mode == "debug":
@@ -60,12 +86,13 @@ def get_cpp_dependencies(src: str, build_mode: str):
     if build_mode == "prod":
         result = subprocess.run(Compiler+" -M "+ProdCFlags+" "+src, shell=True, capture_output=True)
     if result.returncode == 0:
-        include_list = str(result.stdout, "utf-8").lstrip(get_obj_filename(src)+":").splitlines()
-        for item in range(len(include_list)):
-            include_list[item] = include_list[item].lstrip(" ").rstrip("\\ ")
-            if len(include_list[item].split()) > 1:
-                print(include_list[item].split())
-        #return include_list
+        headers = get_all_hdrs()
+        include_list = str(result.stdout, "utf-8").lstrip(get_obj_filename(src)+":").replace("\\", "").splitlines()
+        for item in include_list:
+            for header in headers:
+                if header in item:
+                    header_dependencies += [header]
+        return header_dependencies
     return ["Failed"]
 
 def get_obj_hash(src: str):
@@ -73,86 +100,198 @@ def get_obj_hash(src: str):
         input_filedata = input_file.read()
     return hashlib.md5(input_filedata).hexdigest()
 
+def HashCheckThread():
+    global Sources, PendingSources, new_test_hashes, new_debug_hashes, new_release_hashes, new_prod_hashes
+    while len(Sources) > 0:
+        my_src: str = Sources.pop()
+        if my_src not in PendingSources:
+            input_src = my_src + " " + get_obj_hash(my_src) + "\n"
+            need_to_compile: bool = False
+
+            if test_build:
+                all_dependencies: list[str] = []
+                all_headers: list[str] = get_cpp_dependencies(my_src, "test")
+                if all_headers != ["Failed"]:
+                    for item in all_headers:
+                        all_dependencies += [item + " " + get_obj_hash(item) + "\n"]
+                    all_dependencies += [input_src]
+                else:
+                    all_dependencies = [input_src]
+                all_headers.clear()
+
+                for src in all_dependencies:
+                    if src not in test_hashes:
+                        need_to_compile = True
+
+            if debug_build:
+                all_dependencies: list[str] = []
+                all_headers: list[str] = get_cpp_dependencies(my_src, "debug")
+                if all_headers != ["Failed"]:
+                    for item in all_headers:
+                        all_dependencies += [item + " " + get_obj_hash(item) + "\n"]
+                    all_dependencies += [input_src]
+                else:
+                    all_dependencies = [input_src]
+                all_headers.clear()
+
+                for src in all_dependencies:
+                    if src not in debug_hashes:
+                        need_to_compile = True
+
+            if release_build:
+                all_dependencies: list[str] = []
+                all_headers: list[str] = get_cpp_dependencies(my_src, "release")
+                if all_headers != ["Failed"]:
+                    for item in all_headers:
+                        all_dependencies += [item + " " + get_obj_hash(item) + "\n"]
+                    all_dependencies += [input_src]
+                else:
+                    all_dependencies = [input_src]
+                all_headers.clear()
+
+                for src in all_dependencies:
+                    if src not in release_hashes:
+                        need_to_compile = True
+
+            if prod_build:
+                all_dependencies: list[str] = []
+                all_headers: list[str] = get_cpp_dependencies(my_src, "prod")
+                if all_headers != ["Failed"]:
+                    for item in all_headers:
+                        all_dependencies += [item + " " + get_obj_hash(item) + "\n"]
+                    all_dependencies += [input_src]
+                else:
+                    all_dependencies = [input_src]
+                all_headers.clear()
+
+                for src in all_dependencies:
+                    if src not in prod_hashes:
+                        need_to_compile = True
+
+            if test_build:
+                if need_to_compile:
+                    PendingSources += [("test", my_src)]
+                for item in all_dependencies:
+                    if item not in new_test_hashes:
+                        new_test_hashes += item
+            if debug_build:
+                if need_to_compile:
+                    PendingSources += [("debug", my_src)]
+                for item in all_dependencies:
+                    if item not in new_debug_hashes:
+                        new_debug_hashes += item
+            if release_build:
+                if need_to_compile:
+                    PendingSources += [("release", my_src)]
+                for item in all_dependencies:
+                    if item not in new_release_hashes:
+                        new_release_hashes += item
+            if prod_build:
+                if need_to_compile:
+                    PendingSources += [("prod", my_src)]
+                for item in all_dependencies:
+                    if item not in new_prod_hashes:
+                        new_prod_hashes += item
+
 def CompilationThread():
-    global PendingSources, new_test_hashes, new_debug_hashes, new_release_hashes, new_prod_hashes
+    global PendingSources, new_test_hashes, new_debug_hashes, new_release_hashes, new_prod_hashes, build_fail_test, build_fail_debug, build_fail_release, build_fail_prod
     while len(PendingSources) > 0:
         build_type, my_src = PendingSources.pop()
         my_obj: str = get_obj_filename(my_src)
-        input_src = my_src + " " + get_obj_hash(my_src) + "\n"
-        need_to_compile: bool = False
-        all_dependencies: list[str] = []
-        all_headers: list[str] = get_cpp_dependencies(my_src, build_type)
-        if all_headers != ["Failed"]:
-            for item in all_headers:
-                all_dependencies += [item + " " + get_obj_hash(item) + "\n"]
-            all_dependencies += [input_src]
-        else:
-            all_dependencies = [input_src]
-        all_headers.clear()
-
-        for src in all_dependencies:
+        if build_type == "test":
+            command: str = Compiler + " -c "+ my_src +" -o "+ TestObjBin +"/"+ my_obj + " "+ TestCFlags +" "+ AllCFlags
+        if build_type == "debug":
+            command: str = Compiler + " -c "+ my_src +" -o "+ DebugObjBin +"/"+ my_obj + " "+ DebugCFlags +" "+ AllCFlags
+        if build_type == "release":
+            command: str = Compiler + " -c "+ my_src +" -o "+ ReleaseObjBin +"/"+ my_obj + " "+ ReleaseCFlags +" "+ AllCFlags
+        if build_type == "prod":
+            command: str = Compiler + " -c "+ my_src +" -o "+ ProdObjBin +"/"+ my_obj + " "+ ProdCFlags +" "+ AllCFlags
+        print(" Compiling ("+build_type.center(7, " ")+"): "+my_src.removeprefix("src/"))
+        result = subprocess.run(command, shell=True).returncode
+        if result != 0:
             if build_type == "test":
-                if src not in test_hashes:
-                    need_to_compile = True
-            if build_type == "debug":
-                if src not in debug_hashes:
-                    need_to_compile = True
-            if build_type == "release":
-                if src not in release_hashes:
-                    need_to_compile = True
-            if build_type == "prod":
-                if src not in prod_hashes:
-                    need_to_compile = True
-
-        if need_to_compile:
-            if build_type == "test":
-                command: str = Compiler + " -c "+ my_src +" -o "+ TestBin +"/"+ my_obj + " "+ TestCFlags +" "+ AllCFlags
-            if build_type == "debug":
-                command: str = Compiler + " -c "+ my_src +" -o "+ DebugBin +"/"+ my_obj + " "+ DebugCFlags +" "+ AllCFlags
-            if build_type == "release":
-                command: str = Compiler + " -c "+ my_src +" -o "+ ReleaseBin +"/"+ my_obj + " "+ ReleaseCFlags +" "+ AllCFlags
-            if build_type == "prod":
-                command: str = Compiler + " -c "+ my_src +" -o "+ ProdBin +"/"+ my_obj + " "+ ProdCFlags +" "+ AllCFlags
-            print(" Compiling ("+build_type.center(7, " ")+"): "+my_src.removeprefix("src/"))
-            result = subprocess.run(command, shell=True).returncode
-            if result == 0:
-                if build_type == "test":
-                    new_test_hashes += all_dependencies
-                if build_type == "debug":
-                    new_debug_hashes += all_dependencies
-                if build_type == "release":
-                    new_release_hashes += all_dependencies
-                if build_type == "prod":
-                    new_prod_hashes += all_dependencies
-            else:
+                build_fail_test = True
                 PendingSources.clear()
-                new_test_hashes.clear()
-                new_debug_hashes.clear()
-                new_release_hashes.clear()
-                new_prod_hashes.clear()
-                return
-        else:
-            print(" Skipping  ("+build_type.center(7, " ")+"): "+my_src.removeprefix("src/"))
-            if build_type == "test":
-                new_test_hashes += all_dependencies
             if build_type == "debug":
-                new_debug_hashes += all_dependencies
+                build_fail_debug = True
+                PendingSources.clear()
             if build_type == "release":
-                new_release_hashes += all_dependencies
+                build_fail_release = True
+                PendingSources.clear()
             if build_type == "prod":
-                new_prod_hashes += all_dependencies
+                build_fail_prod = True
+                PendingSources.clear()
 
-def get_all_srcs():
-    global Sources
-    for dir, dirs, files in os.walk("src"):
-        for file in files:
-            if file.endswith(".cpp"):
-                Sources += [dir+"/"+file]
+def LinkThread():
+    global PendingSources, build_fail_test, build_fail_debug, build_fail_release, build_fail_prod
+    while len(PendingSources) > 0:
+        build_type: str = PendingSources.pop()[0]
+        get_all_srcs()
+        expected_srcs: list[str] = Sources
+        expected_objs: list[str] = []
+        my_srcs: str = ""
+        for item in range(len(expected_srcs)):
+            if get_obj_filename(expected_srcs[item]) not in expected_objs:
+                expected_objs += [get_obj_filename(expected_srcs[item])]
+        actual_objs: list[str] = []
+        if build_type == "test":
+            actual_objs = os.listdir(TestObjBin)
+        if build_type == "debug":
+            actual_objs = os.listdir(DebugObjBin)
+        if build_type == "release":
+            actual_objs = os.listdir(ReleaseObjBin)
+        if build_type == "prod":
+            actual_objs = os.listdir(ProdObjBin)
+        for item in expected_objs:
+            if item not in actual_objs:
+                if build_type == "test":
+                    build_fail_test = True
+                    return
+                if build_type == "debug":
+                    build_fail_debug = True
+                    return
+                if build_type == "release":
+                    build_fail_release = True
+                    return
+                if build_type == "prod":
+                    build_fail_prod = True
+                    return
+            else:
+                if build_type == "test" and (TestObjBin + item + " ") not in my_srcs:
+                    my_srcs += TestObjBin + item + " "
+                if build_type == "debug" and (DebugObjBin + item + " ") not in my_srcs:
+                    my_srcs += DebugObjBin + item + " "
+                if build_type == "release" and (ReleaseObjBin + item + " ") not in my_srcs:
+                    my_srcs += ReleaseObjBin + item + " "
+                if build_type == "prod" and (ProdObjBin + item + " ") not in my_srcs:
+                    my_srcs += ProdObjBin + item + " "
+
+        my_srcs = my_srcs.rstrip(" ")
+        if build_type == "test":
+            command: str = Compiler + " "+ my_srcs +" -o "+ TestBin +"/"+ ExecutableName + " "+ TestCFlags +" "+ AllCFlags + " " + LinkFlags
+        if build_type == "debug":
+            command: str = Compiler + " "+ my_srcs +" -o "+ DebugBin +"/"+ ExecutableName + " "+ DebugCFlags +" "+ AllCFlags + " " + LinkFlags
+        if build_type == "release":
+            command: str = Compiler + " "+ my_srcs +" -o "+ ReleaseBin +"/"+ ExecutableName + " "+ ReleaseCFlags +" "+ AllCFlags + " " + LinkFlags
+        if build_type == "prod":
+            command: str = Compiler + " "+ my_srcs +" -o "+ ProdBin +"/"+ ExecutableName + " "+ ProdCFlags +" "+ AllCFlags + " " + LinkFlags
+        print(" Linking ("+build_type.center(7, " ")+"): "+ExecutableName)
+        result = subprocess.run(command, shell=True)
+        print(command)
+        if result.returncode != 0:
+            if build_type == "test":
+                build_fail_test = True
+            if build_type == "debug":
+                build_fail_debug = True
+            if build_type == "release":
+                build_fail_release = True
+            if build_type == "prod":
+                build_fail_prod = True
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("No build flag, usage:")
-        print(" ./mybuild.py [build flag]\n")
+        print(" ./mybuild.py [build flag] [flags]\n")
         print("  valid build flags:")
         print("   test      - no optimization quick build")
         print("   debug     - no optimization, debug-info-laden build (very large binaries)")
@@ -161,6 +300,9 @@ if __name__ == "__main__":
         print("   all       - alias for all of the above")
         print("   run       - build test and run it")
         print("   clean     - deletes the bin directory (after all other targets)")
+        print("\n  valid flags")
+        print("   --verbose - verbose logging")
+        print("   -v        - [alias] verbose logging")
     else:
         if "test" in sys.argv:
             test_build = True
@@ -180,31 +322,37 @@ if __name__ == "__main__":
             test_run = True
         if "clean" in sys.argv:
             clean = True
+        if "-v" in sys.argv or "--verbose" in sys.argv:
+            verbose_logging = True
 
     os.makedirs(".mybuild/", exist_ok=True)
     if test_build:
-        os.makedirs("bin/test", exist_ok=True)
+        os.makedirs(TestObjBin, exist_ok=True)
+        os.makedirs(TestBin, exist_ok=True)
         try:
             with open(".mybuild/testhashes.db", "r") as testhfd:
                 test_hashes = testhfd.readlines()
         except:
             pass
     if debug_build:
-        os.makedirs("bin/debug", exist_ok=True)
+        os.makedirs(DebugObjBin, exist_ok=True)
+        os.makedirs(DebugBin, exist_ok=True)
         try:
             with open(".mybuild/debughashes.db", "r") as debughfd:
                 debug_hashes = debughfd.readlines()
         except:
             pass
     if release_build:
-        os.makedirs("bin/release", exist_ok=True)
+        os.makedirs(ReleaseObjBin, exist_ok=True)
+        os.makedirs(ReleaseBin, exist_ok=True)
         try:
             with open(".mybuild/releasehashes.db", "r") as releasehfd:
                 release_hashes = releasehfd.readlines()
         except:
             pass
     if prod_build:
-        os.makedirs("bin/prod", exist_ok=True)
+        os.makedirs(ProdObjBin, exist_ok=True)
+        os.makedirs(ProdBin, exist_ok=True)
         try:
             with open(".mybuild/prodhashes.db", "r") as prodhfd:
                 prod_hashes = prodhfd.readlines()
@@ -212,77 +360,100 @@ if __name__ == "__main__":
             pass
 
     get_all_srcs()
-    for item in Sources:
-        if test_build:
-            PendingSources += [("test", item)]
-        if debug_build:
-            PendingSources += [("debug", item)]
-        if release_build:
-            PendingSources += [("release", item)]
-        if prod_build:
-            PendingSources += [("prod", item)]
+    log("Running checks...")
     thread_count = os.cpu_count()
     if thread_count == None:
-        CompilationThread()
-    elif thread_count > len(PendingSources):
-        thread_count = len(PendingSources)
+        HashCheckThread()
+    elif thread_count > len(Sources):
+        thread_count = len(Sources)
     
     if thread_count != None:
-        print("Using "+str(thread_count)+" threads")
+        log("Using "+str(thread_count)+" threads")
         AllThreads: list[threading.Thread] = []
         for thread_number in range(thread_count):
-            AllThreads += [threading.Thread(target=CompilationThread)]
+            AllThreads += [threading.Thread(target=HashCheckThread)]
         for thread_number in range(thread_count):
             AllThreads[thread_number].start()
         for thread_number in range(thread_count):
             AllThreads[thread_number].join()
 
-    #TODO LINK
+    if len(PendingSources) == 0:
+        print("Nothing to build")
+    else:
+        log("Compiling...")
+        thread_count = os.cpu_count()
+        if thread_count == None:
+            CompilationThread()
+        elif thread_count > len(PendingSources):
+            thread_count = len(PendingSources)
 
-    if test_build:
+        if thread_count != None:
+            log("Using "+str(thread_count)+" threads")
+            AllThreads: list[threading.Thread] = []
+            for thread_number in range(thread_count):
+                AllThreads += [threading.Thread(target=CompilationThread)]
+            for thread_number in range(thread_count):
+                AllThreads[thread_number].start()
+            for thread_number in range(thread_count):
+                AllThreads[thread_number].join()
+
+        log("Linking...")
+        if test_build:
+            PendingSources += [("test", "")]
+        if debug_build:
+            PendingSources += [("debug", "")]
+        if release_build:
+            PendingSources += [("release", "")]
+        if prod_build:
+            PendingSources += [("prod", "")]
+        thread_count = os.cpu_count()
+        if thread_count == None:
+            LinkThread()
+        elif thread_count > 4:
+            thread_count = 4
+
+        if thread_count != None:
+            log("Using "+str(thread_count)+" threads")
+            AllThreads: list[threading.Thread] = []
+            for thread_number in range(thread_count):
+                AllThreads += [threading.Thread(target=LinkThread)]
+            for thread_number in range(thread_count):
+                AllThreads[thread_number].start()
+            for thread_number in range(thread_count):
+                AllThreads[thread_number].join()
+
+    log("Saving state...")
+    if test_build and not build_fail_test:
         with open(".mybuild/testhashes.db", "w") as testhfd:
             testhfd.writelines(new_test_hashes)
-    if debug_build:
+    if debug_build and not build_fail_debug:
         with open(".mybuild/debughashes.db", "w") as debughfd:
             debughfd.writelines(new_debug_hashes)
-    if release_build:
+    if release_build and not build_fail_release:
         with open(".mybuild/releasehashes.db", "w") as releasehfd:
             releasehfd.writelines(new_release_hashes)
-    if prod_build:
+    if prod_build and not build_fail_prod:
         with open(".mybuild/prodhashes.db", "w") as prodhfd:
             prodhfd.writelines(new_prod_hashes)
 
     if test_run:
-        returncode: int = subprocess.run("./bin/test/main",shell=True).returncode
+        log("Running test...")
+        returncode: int = subprocess.run(TestBin+ExecutableName,shell=True).returncode
         if returncode == 0:
             print("Test success!")
         else:
             print("Test fail, returncode: "+str(returncode))
 
     if clean:
+        log("Cleaning...")
         shutil.rmtree("bin", ignore_errors=True)
         shutil.rmtree(".mybuild", ignore_errors=True)
     
-"""
-def maketest():
-    print("Building test")
-    
-    print("Linking test")
-    if subprocess.run(Compiler+" "+Source+" -o bin/test/main -O0 -g0 -Wall -DNDEBUG -DBUILD_TEST "+LinkFlags, shell=True).returncode == 0:
-        subprocess.run(StripUtil+" --strip-all bin/test/main", shell=True)
-
-def makedebug():
-    print("Building debug")
-    if subprocess.run(Compiler+" "+Source+" -o bin/debug/main -O0 -g3 -Wall -DDEBUG -DBUILD_DEBUG "+LinkFlags, shell=True).returncode == 0:
-        subprocess.run(StripUtil+" --strip-unneeded bin/debug/main", shell=True)
-
-def makerelease():
-    print("Building release")
-    if subprocess.run(Compiler+" "+Source+" -o bin/release/main -O2 -g0 -flto=thin -Wall -DNDEBUG -DBUILD_RELEASE "+LinkFlags, shell=True).returncode == 0:
-        subprocess.run(StripUtil+" --strip-all bin/release/main", shell=True)
-
-def makeprod():
-    print("Building production")
-    if subprocess.run(Compiler+" "+Source+" -o bin/prod/main -O3 -g0 -flto=full -Wall -DNDEBUG -DBUILD_PRODUCTION "+LinkFlags, shell=True).returncode == 0:
-        subprocess.run(StripUtil+" --strip-all bin/prod/main", shell=True)
-"""
+    if build_fail_test:
+        print("Test build failed")
+    if build_fail_debug:
+        print("Debug build failed")
+    if build_fail_release:
+        print("Release build failed")
+    if build_fail_prod:
+        print("Prod build failed")
