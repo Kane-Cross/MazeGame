@@ -5,16 +5,16 @@
 
 namespace XPE{
     class Window{
-        GLFWwindow* window;
+        GLFWwindow* window = nullptr;
     public:
         Window();
         Window(const char* title, int width, int height);
-        bool CreateWindow();
+        bool CreateWindow(const char* title, int width, int height);
         bool IsValid();
         ~Window();
     };
 
-    inline Window CreateWindow(){
-        return Window();
+    inline Window CreateWindow(const char* title, int width, int height){
+        return Window(title, width, height);
     }
 }

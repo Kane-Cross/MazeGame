@@ -3,17 +3,22 @@ import subprocess
 import threading
 import hashlib
 import shutil
+import time
 import sys
 import os
 
 Compiler: str = "clang++"
 StripUtil: str = "llvm-strip-20"
 LinkFlags: str = "-lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl"
-AllCFlags: str = "-Wall"
+AllCFlags: str = ""
 TestCFlags: str = "-O0 -g0 -DTEST -DNDEBUG"
 DebugCFlags: str = "-Og -g3 -DDEBUG"
-ReleaseCFlags: str = "-O2 -g0 -flto=thin -DRELEASE -DNDEBUG"
-ProdCFlags: str = "-O3 -g0 -flto=full -DPRODUCTION -DNDEBUG"
+ReleaseCFlags: str = "-O2 -g0 -flto=thin -DRELEASE -DNDEBUG -Wall"
+ProdCFlags: str = "-O3 -g0 -flto=full -DPRODUCTION -DNDEBUG -Wall"
+TestStripFlag: str = "--strip-debug"
+DebugStripFlag: str = "--strip-unneeded"
+ReleaseStripFlag: str = "--strip-unneeded"
+ProdStripFlag: str = "--strip-all"
 TestObjBin: str = ".mybuild/bin/test/"
 DebugObjBin: str = ".mybuild/bin/debug/"
 ReleaseObjBin: str = ".mybuild/bin/release/"
@@ -290,7 +295,49 @@ def LinkThread():
             if build_type == "prod":
                 build_fail_prod = True
 
+def StripThread():
+    global PendingSources
+    while len(PendingSources) > 0:
+        size_before: int = 0
+        size_after: int = 0
+        build_type: str = PendingSources.pop()[0]
+        binary: str = ""
+        if build_type == "test":
+            binary = TestBin + ExecutableName
+        if build_type == "debug":
+            binary = DebugBin + ExecutableName
+        if build_type == "release":
+            binary = ReleaseBin + ExecutableName
+        if build_type == "prod":
+            binary = ProdBin + ExecutableName
+
+        if build_type == "test":
+            command: str = StripUtil +" "+ binary +" "+ TestStripFlag
+        if build_type == "debug":
+            command: str = StripUtil +" "+ binary +" "+ DebugStripFlag
+        if build_type == "release":
+            command: str = StripUtil +" "+ binary +" "+ ReleaseStripFlag
+        if build_type == "prod":
+            command: str = StripUtil +" "+ binary +" "+ ProdStripFlag
+        size_before = os.path.getsize(binary)
+        print(" Stripping ("+build_type.center(7, " ")+"): "+ExecutableName)
+        result = subprocess.run(command, shell=True)
+        size_after = os.path.getsize(binary)
+        if result.returncode != 0:
+            if build_type == "debug":
+                log("Debug strip failed")
+            if build_type == "release":
+                log("Release strip failed")
+            if build_type == "prod":
+                log("Prod strip failed")
+        else:
+            #log(" File size before strip ("+build_type.center(7, " ")+"):  "+str(size_before))
+            #log(" File size after strip  ("+build_type.center(7, " ")+"):  "+str(size_after))
+            #log(" File size reduction    ("+build_type.center(7, " ")+"):  "+str(size_before - size_after))
+            log(" File size reduction %  ("+build_type.center(7, " ")+"):  "+str(round(((size_before - size_after)/size_before) * 100, 3)))
+
 if __name__ == "__main__":
+    start_time = time.time()
     if len(sys.argv) < 2:
         print("No build flag, usage:")
         print(" ./mybuild.py [build flag] [flags]\n")
@@ -305,6 +352,10 @@ if __name__ == "__main__":
         print("\n  valid flags")
         print("   --verbose - verbose logging")
         print("   -v        - [alias] verbose logging")
+        print("   --silent  - do not log at all")
+        print("   -s        - [alias] silent")
+        print("   --force   - force build all sources")
+        print("   -f        - [alias] force build")
     else:
         if "test" in sys.argv:
             test_build = True
@@ -326,6 +377,10 @@ if __name__ == "__main__":
             clean = True
         if "-v" in sys.argv or "--verbose" in sys.argv:
             verbose_logging = True
+        if "-s" in sys.argv or "--silent" in sys.argv:
+            print("Not implemented as of yet ###TODO###") #TODO
+        if "-f" in sys.argv or "--force" in sys.argv:
+            print("Not implemented as of yet ###TODO###") #TODO
 
     os.makedirs(".mybuild/", exist_ok=True)
     if test_build:
@@ -380,16 +435,16 @@ if __name__ == "__main__":
             AllThreads[thread_number].join()
 
     if len(PendingSources) == 0:
-        print("Nothing to build")
+        log("Nothing to build")
     else:
         log("Compiling...")
         thread_count = os.cpu_count()
-        if thread_count == None:
+        if thread_count == None and len(PendingSources) > 0:
             CompilationThread()
         elif thread_count > len(PendingSources):
             thread_count = len(PendingSources)
 
-        if thread_count != None:
+        if thread_count != None and len(PendingSources) > 0:
             log("Using "+str(thread_count)+" threads")
             AllThreads: list[threading.Thread] = []
             for thread_number in range(thread_count):
@@ -409,12 +464,12 @@ if __name__ == "__main__":
         if prod_build:
             PendingSources += [("prod", "")]
         thread_count = os.cpu_count()
-        if thread_count == None:
+        if thread_count == None and len(PendingSources) > 0:
             LinkThread()
-        elif thread_count > 4:
-            thread_count = 4
+        elif thread_count > len(PendingSources):
+            thread_count = len(PendingSources)
 
-        if thread_count != None:
+        if thread_count != None and len(PendingSources) > 0:
             log("Using "+str(thread_count)+" threads")
             AllThreads: list[threading.Thread] = []
             for thread_number in range(thread_count):
@@ -423,6 +478,29 @@ if __name__ == "__main__":
                 AllThreads[thread_number].start()
             for thread_number in range(thread_count):
                 AllThreads[thread_number].join()
+    
+        log("Strip...")
+        if release_build:
+            PendingSources += [("release", "")]
+        if prod_build:
+            PendingSources += [("prod", "")]
+        thread_count = os.cpu_count()
+        if thread_count == None and len(PendingSources) > 0:
+            StripThread()
+        elif thread_count > len(PendingSources):
+            thread_count = len(PendingSources)
+
+        if thread_count != None and len(PendingSources) > 0:
+            log("Using "+str(thread_count)+" threads")
+            AllThreads: list[threading.Thread] = []
+            for thread_number in range(thread_count):
+                AllThreads += [threading.Thread(target=StripThread)]
+            for thread_number in range(thread_count):
+                AllThreads[thread_number].start()
+            for thread_number in range(thread_count):
+                AllThreads[thread_number].join()
+
+    log("Build time: "+str(round(time.time()-start_time, 3))+"s")
 
     log("Saving state...")
     if test_build and not build_fail_test:
