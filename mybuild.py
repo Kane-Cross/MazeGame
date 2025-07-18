@@ -53,6 +53,9 @@ prod_build: bool = False
 test_run: bool = False
 clean: bool = False
 
+def get_file_dependencies():
+    pass
+
 def get_obj_filename(src: str):
     if src.endswith(".cpp"):
         if "/" in src:
@@ -268,16 +271,15 @@ def LinkThread():
 
         my_srcs = my_srcs.rstrip(" ")
         if build_type == "test":
-            command: str = Compiler + " "+ my_srcs +" -o "+ TestBin +"/"+ ExecutableName + " "+ TestCFlags +" "+ AllCFlags + " " + LinkFlags
+            command: str = Compiler + " "+ my_srcs +" -o "+ TestBin + ExecutableName + " "+ TestCFlags +" "+ AllCFlags + " " + LinkFlags
         if build_type == "debug":
-            command: str = Compiler + " "+ my_srcs +" -o "+ DebugBin +"/"+ ExecutableName + " "+ DebugCFlags +" "+ AllCFlags + " " + LinkFlags
+            command: str = Compiler + " "+ my_srcs +" -o "+ DebugBin + ExecutableName + " "+ DebugCFlags +" "+ AllCFlags + " " + LinkFlags
         if build_type == "release":
-            command: str = Compiler + " "+ my_srcs +" -o "+ ReleaseBin +"/"+ ExecutableName + " "+ ReleaseCFlags +" "+ AllCFlags + " " + LinkFlags
+            command: str = Compiler + " "+ my_srcs +" -o "+ ReleaseBin + ExecutableName + " "+ ReleaseCFlags +" "+ AllCFlags + " " + LinkFlags
         if build_type == "prod":
-            command: str = Compiler + " "+ my_srcs +" -o "+ ProdBin +"/"+ ExecutableName + " "+ ProdCFlags +" "+ AllCFlags + " " + LinkFlags
-        print(" Linking ("+build_type.center(7, " ")+"): "+ExecutableName)
+            command: str = Compiler + " "+ my_srcs +" -o "+ ProdBin + ExecutableName + " "+ ProdCFlags +" "+ AllCFlags + " " + LinkFlags
+        print(" Linking   ("+build_type.center(7, " ")+"): "+ExecutableName)
         result = subprocess.run(command, shell=True)
-        print(command)
         if result.returncode != 0:
             if build_type == "test":
                 build_fail_test = True
@@ -433,6 +435,19 @@ if __name__ == "__main__":
         with open(".mybuild/releasehashes.db", "w") as releasehfd:
             releasehfd.writelines(new_release_hashes)
     if prod_build and not build_fail_prod:
+        with open(".mybuild/prodhashes.db", "w") as prodhfd:
+            prodhfd.writelines(new_prod_hashes)
+
+    if test_build:
+        with open(".mybuild/testhashes.db", "w") as testhfd:
+            testhfd.writelines(new_test_hashes)
+    if debug_build:
+        with open(".mybuild/debughashes.db", "w") as debughfd:
+            debughfd.writelines(new_debug_hashes)
+    if release_build:
+        with open(".mybuild/releasehashes.db", "w") as releasehfd:
+            releasehfd.writelines(new_release_hashes)
+    if prod_build:
         with open(".mybuild/prodhashes.db", "w") as prodhfd:
             prodhfd.writelines(new_prod_hashes)
 
