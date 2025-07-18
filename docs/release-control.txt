@@ -1,0 +1,34 @@
+Release builds are for beta testing
+Production builds are for full releases
+
+So if you intend to do any UAT please mark on Github as pre-release and publish the "Release" build type
+
+Note:
+    Test builds are for quick builds, to ensure your change runs
+
+    Debug builds are for complex debugging, to allow you to use all debugging features
+    
+    Release builds are for simple releases, to push versions out that aren't bleeding-edge
+    
+    Prod builds are for full releases, these use the maximum optimizations, and are for scheduled releases only
+
+Version numbers are as follows:
+
+    V{version_variant}.{version_major}.{version_minor}.{version_patch}
+
+    These follow the Vulkan spec for versioning
+
+    Production builds will only have this version numbering system, pre-releases
+    will use the following system:
+        VX.X.X.X-alpha (closed invite-only release)
+        VX.X.X.X-beta (open limited release)
+        VX.X.X.X-release-candidate (full release preview)
+        The patch number for these versions is used to denote the progression of these versions
+        
+        Patch version numbers will increment for every release of that Variant, Major, Minor branch
+        Minor version numbers will only increment with feature releases
+        Major version numbers will only increment with compatibility-breaking/large feature releases
+        Variant version numbers will only increment with full overhauls or major changes to gameplay/functionality
+
+        Releases and advertising must be agreed upon unanimously by primary maintainers
+         (currently Kane Cross and Cristi Pogar)
