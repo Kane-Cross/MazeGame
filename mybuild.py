@@ -421,6 +421,7 @@ if __name__ == "__main__":
         except:
             pass
 
+    built_something: bool = True
     get_all_srcs()
     log("Running checks...")
     thread_count = os.cpu_count()
@@ -441,6 +442,7 @@ if __name__ == "__main__":
 
     if len(PendingSources) == 0:
         log("Nothing to build")
+        built_something = False
     else:
         log("Compiling...")
         thread_count = os.cpu_count()
@@ -505,7 +507,8 @@ if __name__ == "__main__":
             for thread_number in range(thread_count):
                 AllThreads[thread_number].join()
 
-    log("Build time: "+str(round(time.time()-start_time, 3))+"s")
+    if built_something:
+        plog("Build time: "+str(round(time.time()-start_time, 3))+"s")
 
     log("Saving state...")
     if test_build and not build_fail_test:
