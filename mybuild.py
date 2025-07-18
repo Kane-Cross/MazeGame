@@ -47,8 +47,13 @@ build_fail_release: bool = False
 build_fail_prod: bool = False
 
 verbose_logging: bool = False
+silent_mode: bool = False
+force_build: bool = False
 def log(message: str):
-    if verbose_logging:
+    if verbose_logging and not silent_mode:
+        print(message)
+def plog(message: str):
+    if not silent_mode:
         print(message)
 
 test_build: bool = False
@@ -114,7 +119,7 @@ def HashCheckThread():
         my_src: str = Sources.pop()
         if my_src not in PendingSources:
             input_src = my_src + " " + get_obj_hash(my_src) + "\n"
-            need_to_compile: bool = False
+            need_to_compile: bool = force_build
 
             if test_build:
                 all_dependencies: list[str] = []
@@ -214,7 +219,7 @@ def CompilationThread():
             command: str = Compiler + " -c "+ my_src +" -o "+ ReleaseObjBin +"/"+ my_obj + " "+ ReleaseCFlags +" "+ AllCFlags
         if build_type == "prod":
             command: str = Compiler + " -c "+ my_src +" -o "+ ProdObjBin +"/"+ my_obj + " "+ ProdCFlags +" "+ AllCFlags
-        print(" Compiling ("+build_type.center(7, " ")+"): "+my_src.removeprefix("src/"))
+        plog(" Compiling ("+build_type.center(7, " ")+"): "+my_src.removeprefix("src/"))
         result = subprocess.run(command, shell=True).returncode
         if result != 0:
             if build_type == "test":
@@ -283,7 +288,7 @@ def LinkThread():
             command: str = Compiler + " "+ my_srcs +" -o "+ ReleaseBin + ExecutableName + " "+ ReleaseCFlags +" "+ AllCFlags + " " + LinkFlags
         if build_type == "prod":
             command: str = Compiler + " "+ my_srcs +" -o "+ ProdBin + ExecutableName + " "+ ProdCFlags +" "+ AllCFlags + " " + LinkFlags
-        print(" Linking   ("+build_type.center(7, " ")+"): "+ExecutableName)
+        plog(" Linking   ("+build_type.center(7, " ")+"): "+ExecutableName)
         result = subprocess.run(command, shell=True)
         if result.returncode != 0:
             if build_type == "test":
@@ -320,7 +325,7 @@ def StripThread():
         if build_type == "prod":
             command: str = StripUtil +" "+ binary +" "+ ProdStripFlag
         size_before = os.path.getsize(binary)
-        print(" Stripping ("+build_type.center(7, " ")+"): "+ExecutableName)
+        plog(" Stripping ("+build_type.center(7, " ")+"): "+ExecutableName)
         result = subprocess.run(command, shell=True)
         size_after = os.path.getsize(binary)
         if result.returncode != 0:
@@ -378,9 +383,9 @@ if __name__ == "__main__":
         if "-v" in sys.argv or "--verbose" in sys.argv:
             verbose_logging = True
         if "-s" in sys.argv or "--silent" in sys.argv:
-            print("Not implemented as of yet ###TODO###") #TODO
+            silent_mode = True
         if "-f" in sys.argv or "--force" in sys.argv:
-            print("Not implemented as of yet ###TODO###") #TODO
+            force_build = True
 
     os.makedirs(".mybuild/", exist_ok=True)
     if test_build:
@@ -533,9 +538,9 @@ if __name__ == "__main__":
         log("Running test...")
         returncode: int = subprocess.run(TestBin+ExecutableName,shell=True).returncode
         if returncode == 0:
-            print("Test success!")
+            plog("Test success!")
         else:
-            print("Test fail, returncode: "+str(returncode))
+            plog("Test fail, returncode: "+str(returncode))
 
     if clean:
         log("Cleaning...")

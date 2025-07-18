@@ -4,12 +4,12 @@ namespace XPE{
     Window::Window(){};
 
     Window::Window(const char* title, int width, int height){
-        glfwWindowHint(GLFW_OPENGL_CORE_PROFILE, 4);
-        glfwWindowHint(GLFW_OPENGL_API, 6);
+        CreateWindow(title, width, height);
     };
 
     bool Window::CreateWindow(const char* title, int width, int height){
-
+        
+        return IsValid();
     };
 
     bool Window::IsValid(){

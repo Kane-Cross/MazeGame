@@ -6,7 +6,5 @@
 namespace XPE{
     bool Init();
 
-    bool GetError();
-
     void Quit();
 }
