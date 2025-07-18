@@ -1,0 +1,8 @@
+glad:
+https://glad.dav1d.de/#language=c&specification=gl&api=gl%3D4.6&api=gles1%3Dnone&api=gles2%3Dnone&api=glsc2%3Dnone&profile=core&extensions=GL_ARB_compute_shader&extensions=GL_ARB_texture_compression&extensions=GL_EXT_draw_instanced&extensions=GL_KHR_context_flush_control&extensions=GL_KHR_debug&extensions=GL_KHR_no_error&extensions=GL_KHR_parallel_shader_compile&extensions=GL_KHR_robust_buffer_access_behavior&extensions=GL_KHR_robustness&extensions=GL_KHR_texture_compression_astc_hdr&extensions=GL_KHR_texture_compression_astc_ldr&loader=on
+
+stb:
+https://github.com/nothings/stb
+
+OpenSimplexNoise:
+https://github.com/deerel/OpenSimplexNoise
