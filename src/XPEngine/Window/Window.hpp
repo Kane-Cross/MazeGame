@@ -3,13 +3,20 @@
 #include "../external/glad/include/glad/glad.h"
 #include <GLFW/glfw3.h>
 
+#include <iostream>
+
 namespace XPE{
     class Window{
         GLFWwindow* window = nullptr;
+        bool error = false;
+        static void WindowResizeCallback(GLFWwindow* window, int width, int height);
     public:
         Window();
         Window(const char* title, int width, int height);
         bool CreateWindow(const char* title, int width, int height);
+        void Show();
+        void Hide();
+        void Resize(int width, int height);
         bool IsValid();
         ~Window();
     };
