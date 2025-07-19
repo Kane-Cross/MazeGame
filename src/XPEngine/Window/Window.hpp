@@ -3,7 +3,7 @@
 #include "../external/glad/include/glad/glad.h"
 #include <GLFW/glfw3.h>
 
-#include "Renderer/Renderer.hpp"
+#include "../Renderer/Renderer.hpp"
 
 namespace XPE{
     class Window{
@@ -27,6 +27,7 @@ namespace XPE{
 
         void BindRenderer(Renderer* renderer);
         Renderer* GetRenderer();
+        GLFWwindow* GetWindow();
 
         void Destroy();
     };

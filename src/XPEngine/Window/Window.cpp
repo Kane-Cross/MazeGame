@@ -1,5 +1,7 @@
 #include "Window.hpp"
 
+#include <iostream>
+
 namespace XPE{
     void Window::WindowResizeCallback(GLFWwindow* window, int width, int height){
         Window* resized_window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
@@ -66,7 +68,18 @@ namespace XPE{
         bound_renderer = renderer;
     }
 
+    Renderer* Window::GetRenderer(){
+        return bound_renderer;
+    }
+
+    GLFWwindow* Window::GetWindow(){
+        return window;
+    }
+
     void Window::Destroy(){
-        glfwDestroyWindow(window);
+        glfwPollEvents();
+        if(window == nullptr){
+            glfwDestroyWindow(window);
+        }
     }
 }
