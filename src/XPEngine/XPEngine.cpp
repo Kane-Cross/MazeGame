@@ -1,8 +1,13 @@
 #include "XPEngine.hpp"
 
+#include <vector>
+#include <iostream>
+
 namespace XPE{
     bool Init(){
-        return glfwInit() == GLFW_TRUE;
+        int result = glfwInit();
+        glfwSetErrorCallback(GLFWErrorCallback);
+        return result == GLFW_TRUE;
     }
 
     void Quit(){

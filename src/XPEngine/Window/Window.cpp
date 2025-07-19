@@ -1,8 +1,9 @@
 #include "Window.hpp"
 
 namespace XPE{
-    static void XPEWindowResizeCallback(GLFWwindow* window, int width, int height){
-        
+    void Window::WindowResizeCallback(GLFWwindow* window, int width, int height){
+        Window* resized_window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+        resized_window->SetViewport(0, 0, width, height);
     }
 
     Window::Window(){};
@@ -24,6 +25,8 @@ namespace XPE{
         glViewport(0, 0, width, height);
         glfwSetWindowUserPointer(window, this);
         glfwSetFramebufferSizeCallback(window, WindowResizeCallback);
+        
+        glfwSwapBuffers(window);
         error = !IsValid();
         return error;
     };
@@ -36,13 +39,19 @@ namespace XPE{
         glfwHideWindow(window);
     }
 
+    void Window::Resize(int width, int height){
+        glfwSetWindowSize(window, width, height);
+    }
+
+    void Window::SetViewport(int x, int y, int width, int height){
+        glViewport(x, y, width, height);
+    }
+
     bool Window::IsValid(){
         return window == nullptr;
     };
 
-    Window::~Window(){
-        if(window != nullptr){
-            glfwDestroyWindow(window);
-        }
+    void Window::Destroy(){
+        glfwDestroyWindow(window);
     }
 }

@@ -17,8 +17,9 @@ namespace XPE{
         void Show();
         void Hide();
         void Resize(int width, int height);
+        void SetViewport(int x, int y, int width, int height);
         bool IsValid();
-        ~Window();
+        void Destroy();
     };
 
     inline Window CreateWindow(const char* title, int width, int height){
