@@ -20,6 +20,7 @@ namespace XPE{
         bool CreateRenderer(Window* window);
         void SetViewport(int x, int y, int width, int height);
         void DrawRectangle();
+        void Clear();
         bool IsValid();
         void Destroy();
     };
