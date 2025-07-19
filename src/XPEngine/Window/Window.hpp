@@ -3,11 +3,12 @@
 #include "../external/glad/include/glad/glad.h"
 #include <GLFW/glfw3.h>
 
-#include <iostream>
+#include "Renderer/Renderer.hpp"
 
 namespace XPE{
     class Window{
         GLFWwindow* window = nullptr;
+        Renderer* bound_renderer;
         bool error = false;
         static void WindowResizeCallback(GLFWwindow* window, int width, int height);
     public:
@@ -23,6 +24,10 @@ namespace XPE{
         void PollEvents();
         bool WindowShouldClose();
         bool IsValid();
+
+        void BindRenderer(Renderer* renderer);
+        Renderer* GetRenderer();
+
         void Destroy();
     };
 

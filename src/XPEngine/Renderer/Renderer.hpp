@@ -4,9 +4,9 @@
 #include <GLFW/glfw3.h>
 #include <vector>
 
-#include "../Window/Window.hpp"
-
 namespace XPE{
+    class Window;
+
     class Renderer{
         Window* parent_window;
         std::vector<float> vertices;

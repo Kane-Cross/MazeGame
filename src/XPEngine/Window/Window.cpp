@@ -3,7 +3,8 @@
 namespace XPE{
     void Window::WindowResizeCallback(GLFWwindow* window, int width, int height){
         Window* resized_window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-        resized_window->SetViewport(0, 0, width, height);
+        Renderer* renderer = resized_window->GetRenderer();
+        renderer->SetViewport(0, 0, width, height);
     }
 
     Window::Window(){};
@@ -59,7 +60,11 @@ namespace XPE{
 
     bool Window::IsValid(){
         return window == nullptr;
-    };
+    }
+
+    void Window::BindRenderer(Renderer* renderer){
+        bound_renderer = renderer;
+    }
 
     void Window::Destroy(){
         glfwDestroyWindow(window);
