@@ -41,8 +41,8 @@ namespace XPE{
         glfwSetWindowSize(window, width, height);
     }
 
-    void Window::SetViewport(int x, int y, int width, int height){
-        glViewport(x, y, width, height);
+    void Window::GetSize(int* w, int* h){
+        glfwGetFramebufferSize(window, w, h);
     }
 
     void Window::SwapBuffers(){

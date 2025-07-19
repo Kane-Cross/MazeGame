@@ -32,6 +32,7 @@
         "stdexcept": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "__verbose_abort": "cpp"
+        "__verbose_abort": "cpp",
+        "iostream": "cpp"
     }
 }

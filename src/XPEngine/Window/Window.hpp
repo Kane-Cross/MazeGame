@@ -17,7 +17,8 @@ namespace XPE{
         void Show();
         void Hide();
         void Resize(int width, int height);
-        void SetViewport(int x, int y, int width, int height);
+        void SetCurrent();
+        void GetSize(int* x, int* y);
         void SwapBuffers();
         void PollEvents();
         bool WindowShouldClose();

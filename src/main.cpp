@@ -13,6 +13,8 @@ int main(int argc, const char* argv[]){
         test_window.SwapBuffers();
     }
 
+    test_window.Destroy();
+
     XPE::Quit();
     return 0;
 }
