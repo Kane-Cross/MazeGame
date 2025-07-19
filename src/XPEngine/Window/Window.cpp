@@ -25,8 +25,6 @@ namespace XPE{
         glViewport(0, 0, width, height);
         glfwSetWindowUserPointer(window, this);
         glfwSetFramebufferSizeCallback(window, WindowResizeCallback);
-        
-        glfwSwapBuffers(window);
         error = !IsValid();
         return error;
     };
@@ -45,6 +43,18 @@ namespace XPE{
 
     void Window::SetViewport(int x, int y, int width, int height){
         glViewport(x, y, width, height);
+    }
+
+    void Window::SwapBuffers(){
+        glfwSwapBuffers(window);
+    }
+
+    void Window::PollEvents(){
+        glfwPollEvents();
+    }
+
+    bool Window::WindowShouldClose(){
+        return glfwWindowShouldClose(window) == 0;
     }
 
     bool Window::IsValid(){
